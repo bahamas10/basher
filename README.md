@@ -613,7 +613,7 @@ will happen, the variable may remain unquoted.
 ``` bash
 foo='hello world'
 
-if [[ -n $foo ]]; then   # no quotes needed - [[ ... ]] won't word-split split variable expansions
+if [[ -n $foo ]]; then   # no quotes needed - [[ ... ]] won't word-split variable expansions
     echo "$foo"          # quotes needed
 fi
 
