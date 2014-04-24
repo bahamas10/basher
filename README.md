@@ -376,7 +376,7 @@ This function is almost identical to `put_file`, except it takes an
 
 This function will fatal if `erb` is not found
 
-```
+``` bash
 if put_template templates/sshd_config.erb /etc/ssh/sshd_config; then
     # files were different
     restart ssh
