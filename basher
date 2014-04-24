@@ -404,7 +404,7 @@ fi
 
 _BASHER_CURRENT_PLUGIN='main'
 log "running as $USER on $HOSTNAME (pid $$)"
-debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION"
+debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION BASHER_VERSION=$BASHER_VERSION"
 
 # check dependencies
 if $_basher_builtin_date; then
