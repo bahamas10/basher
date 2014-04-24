@@ -1,0 +1,529 @@
+#!/usr/bin/env bash
+#
+# basher
+#
+# Configuration management in Bash
+#
+# Inspired by: https://twitter.com/bahamas10_/status/443818952125194240
+# Style guidelines: http://mywiki.wooledge.org/
+#
+# Creator: Dave Eddy <dave@daveeddy.com>
+# Date: 3/13/14
+# License: MIT
+#
+# Contributors
+# - Dave Eddy <dave@daveeddy.com> bahamas10
+
+export BASHER_VERSION='v0.0.0'
+
+# print the basher usage message
+usage() {
+	local prog=${0##*/}
+	cat <<-EOF
+	usage: $prog [-b] [-c file] [-d <dir>] [-f] [-h] [-t <script>] [-v] [-V] plugin1 plugin2 ...
+	version: $BASHER_VERSION
+
+	options
+	  -b            boring mode, disable color output
+	  -c <file>     basher config file, defaults to $_basher_config_file
+	  -d <dir>      dir to look for basher plugins, defaults to CWD
+	  -f            force run; skip acquiring the lockfile ($BASHER_LOCKFILE)
+	  -h            print this message and exit
+	  -l <level>    log level, defaults to info
+	  -t <script>   run a single script in your CWD, useful for testing
+	  -v            increase verbosity
+	  -V            print the version number and exit
+	EOF
+}
+
+# can be overridden in config, and are exported as env variables
+export BASHER_DATE_FORMAT='%Y-%m-%dT%H:%M:%S%z'
+export BASHER_DIR=$PWD
+export BASHER_LOCKFILE='/var/run/basher.pid'
+export BASHER_VERBOSITY=3 # info
+
+# command line / config options, not exported
+_basher_builtin_date=false
+_basher_lockfile_created=false
+_basher_boring=false
+_basher_config_file='/etc/basher.conf'
+_basher_dir=
+_basher_force=false
+_basher_test_script=
+while getopts 'bc:d:fhl:t:vV' option; do
+	case "$option" in
+		b) _basher_boring=true;;
+		c) _basher_config_file=$OPTARG;;
+		d) _basher_dir=$OPTARG;;
+		f) _basher_force=true;;
+		h) usage; exit 0;;
+		l)
+			case "$OPTARG" in
+				fatal) BASHER_VERBOSITY=0;;
+				error) BASHER_VERBOSITY=1;;
+				warn)  BASHER_VERBOSITY=2;;
+				info)  BASHER_VERBOSITY=3;;
+				debug) BASHER_VERBOSITY=4;;
+				trace) BASHER_VERBOSITY=5;;
+			esac
+		;;
+		t) _basher_test_script=$OPTARG;;
+		v) ((BASHER_VERBOSITY++));;
+		V) echo "$BASHER_VERSION"; exit 0;;
+		*) usage >&2; exit 1;;
+	esac
+done
+shift "$((OPTIND - 1))"
+
+#####################################
+# functions and variables for basher
+#####################################
+
+# first, cleanup namespace of things that shouldn't be exported
+# or passed to the plugins sourced
+unset -f usage
+unset OPTERR OPTARG OPTIND option
+
+# colors should be made available to plugins.  by using these variables
+# you cut down on the number of `tput` commands fork+exec'd, eliminate the
+# desire to hardcode ansi-escape codes, and honor the TERM variable set.
+if ! $_basher_boring; then
+	COLOR_RESET=$(  tput sgr0    2>/dev/null)
+	COLOR_BOLD=$(   tput bold    2>/dev/null)
+	COLOR_INVERSE=$(tput rev     2>/dev/null)
+	COLOR_BLACK=$(  tput setaf 0 2>/dev/null)
+	COLOR_RED=$(    tput setaf 1 2>/dev/null)
+	COLOR_GREEN=$(  tput setaf 2 2>/dev/null)
+	COLOR_YELLOW=$( tput setaf 3 2>/dev/null)
+	COLOR_BLUE=$(   tput setaf 4 2>/dev/null)
+	COLOR_MAGENTA=$(tput setaf 5 2>/dev/null)
+	COLOR_CYAN=$(   tput setaf 6 2>/dev/null)
+	COLOR_WHITE=$(  tput setaf 7 2>/dev/null)
+else
+	COLOR_RESET=
+	COLOR_BOLD=
+	COLOR_INVERSE=
+	COLOR_BLACK=
+	COLOR_RED=
+	COLOR_GREEN=
+	COLOR_YELLOW=
+	COLOR_BLUE=
+	COLOR_MAGENTA=
+	COLOR_CYAN=
+	COLOR_WHITE=
+fi
+
+# logging function; not to be called directly
+_basher_log() {
+	local level=$1
+	shift
+	case "$level" in
+		FATAL) level="$COLOR_INVERSE$level$COLOR_RESET";;
+		ERROR) level="$COLOR_RED$level$COLOR_RESET";;
+		WARN) level=" $COLOR_MAGENTA$level$COLOR_RESET";;
+		INFO) level=" $COLOR_CYAN$level$COLOR_RESET";;
+		DEBUG) level="$COLOR_WHITE$level$COLOR_RESET";;
+		TRACE) level="$COLOR_WHITE$level$COLOR_RESET";;
+	esac
+	if ((BASHER_VERBOSITY > 5)); then # above trace
+		# line number and filename
+		printf '%s %s %s %s: %s\n' \
+			"$COLOR_CYAN[$(_basher_date)]$COLOR_RESET" \
+			"$_BASHER_CURRENT_PLUGIN" \
+			"$COLOR_WHITE(${BASH_SOURCE[2]} ${BASH_LINENO[1]})$COLOR_RESET" \
+			"$level" \
+			"$*"
+	else
+		# minimal logging
+		printf '%s %s %s: %s\n' \
+			"$COLOR_CYAN[$(_basher_date)]$COLOR_RESET" \
+			"$_BASHER_CURRENT_PLUGIN" \
+			"$level" \
+			"$*"
+	fi
+}
+
+# print the date using the format specified
+_basher_date() {
+	if $_basher_builtin_date; then
+		printf "%($BASHER_DATE_FORMAT)T" -1
+	else
+		date "+$BASHER_DATE_FORMAT"
+	fi
+}
+
+# print a colorized diff
+color_diff() {
+	diff -u "$@" | awk "
+	/^\-/ {
+		printf(\"%s\", \"$COLOR_RED\");
+	}
+	/^\+/ {
+		printf(\"%s\", \"$COLOR_GREEN\");
+	}
+	/^@/ {
+		printf(\"%s\", \"$COLOR_MAGENTA\");
+	}
+
+	{
+		print \$0 \"$COLOR_RESET\";
+	}"
+	return "${PIPESTATUS[0]}"
+}
+
+# log levels inspired by https://github.com/trentm/node-bunyan#levels
+fatal() {
+	((BASHER_VERBOSITY >= 0)) && _basher_log FATAL "$@"
+	exit 1
+}
+error() {
+	((BASHER_VERBOSITY >= 1)) && _basher_log ERROR "$@"
+	return 0
+}
+warn() {
+	((BASHER_VERBOSITY >= 2)) && _basher_log WARN "$@"
+	return 0
+}
+info() {
+	((BASHER_VERBOSITY >= 3)) && _basher_log INFO "$@"
+	return 0
+}
+debug() {
+	((BASHER_VERBOSITY >= 4)) && _basher_log DEBUG "$@"
+	return 0
+}
+trace() {
+	((BASHER_VERBOSITY >= 5)) && _basher_log TRACE "$@"
+	return 0
+}
+# log is an alias for info
+log() {
+	((BASHER_VERBOSITY >= 3)) && _basher_log INFO "$@"
+	return 0
+}
+
+# useful functions for file placement with diff
+
+# put_file
+#
+# this function has similar usage to `cp` or `mv`, except
+# it only works with 2 options.  it `cp`'s `$1` to `$2`, only if
+# there was a difference found between the 2 files.
+#
+# this function will fatal if the `cp` operation fails,
+# return 0 if the files differ and the new file
+# was moved into place, and return 1 if the files
+# were the same.  This allows for code like:
+#
+# if put_file sshd_config /etc/ssh/sshd_config; then
+#      # files were different
+#      restart ssh
+# fi
+#
+# arguments
+# $1 - source file
+# $2 - destination file
+# $3 - [optional] mode to set file, passed to `chmod`
+# $4 - [optional] owner to set file, passed to `chown`
+#
+# returns
+# 0 - file was updated
+# 1 - files were the same; nothing done
+put_file() {
+	[[ -n $1 ]] || fatal 'put_file :: source filename must be specified as $1'
+	[[ -n $2 ]] || fatal 'put_file :: destination filename must be specified as $2'
+
+	local mode=$3
+	local owner=$4
+
+	local ret=0
+
+	log "put_file :: $1 -> $2"
+
+	# diff the file and put it into place
+	if ! color_diff "$2" "$1"; then
+		debug 'put_file :: files were different - copying file into place'
+		cp "$1" "$2" || fatal "put_file :: cp(1) failed"
+		warn "put_file :: $1 -> $2"
+		ret=0
+	else
+		debug 'put_file :: files were the same - no action taken'
+		ret=1
+	fi
+
+	# set mode and user if needed
+	if [[ -n $mode ]]; then
+		trace "put_template :: set mode to $mode on $2"
+		chmod "$mode" "$2" || fatal "put_file :: failed to chmod $mode $2"
+	fi
+	if [[ -n $owner ]]; then
+		trace "put_template :: set owner to $owner on $2"
+		chown "$owner" "$2" || fatal "put_file :: failed to chown $owner $2"
+	fi
+
+	return "$ret"
+}
+
+# put_template
+#
+# this function is almost identical to `put_file`, except it takes an
+# erb template as the first argument and automatically renders it.
+#
+# note: this function will fatal if `erb` is not found
+#
+# if put_template templates/sshd_config.erb /etc/ssh/sshd_config; then
+#     # files were different
+#     restart ssh
+# fi
+#
+# arguments
+# $1 - erb template
+# $2 - destination file
+# $3 - [optional] mode to set file, passed to `chmod`
+# $4 - [optional] owner to set file, passed to `chown`
+#
+# returns
+# 0 - file was updated
+# 1 - files were the same; nothing done
+put_template() {
+	[[ -n $1 ]] || fatal 'put_template :: erb template file must be specified as $1'
+	[[ -n $2 ]] || fatal 'put_template :: destination filename must be specified as $2'
+
+	local mode=$3
+	local owner=$4
+
+	local ret=0
+
+	log "put_template :: $1 -> $2"
+
+	# render to a tempfile so we can diff it
+	local tmpfile=$(mktemp "/tmp/basher-$$-XXXXXX")
+
+	trace "put_template :: generating erb template to temp file $tmpfile"
+	erb -T - "$1" > "$tmpfile" || fatal 'put_template :: failed to generate erb template'
+
+	if ! color_diff "$2" "$tmpfile"; then
+		debug 'put_template :: files were different - moving file into place'
+		mv "$tmpfile" "$2" || fatal "put_template :: mv(1) failed"
+		warn "put_template :: $1 -> $2"
+		ret=0
+	else
+		debug 'put_template :: files were the same - no action taken'
+		trace "put_template :: unlinking temp file $tmpfile"
+		rm -f "$tmpfile"
+		ret=1
+	fi
+
+	# set mode and user if needed
+	if [[ -n $mode ]]; then
+		trace "put_template :: set mode to $mode on $2"
+		chmod "$mode" "$2" || fatal "put_file :: failed to chmod $mode $2"
+	fi
+	if [[ -n $owner ]]; then
+		trace "put_template :: set owner to $owner on $2"
+		chown "$owner" "$2" || fatal "put_file :: failed to chown $owner $2"
+	fi
+
+	return "$ret"
+}
+
+# git_repository
+#
+# synchronize a git repository to the local filesystem.  this function
+# ensures the directory is created, and kept up-to-date against a specific
+# branch or tag (defaults to `master`).
+#
+# usage: git_repository <repo> <dir> [tag|branch]
+#
+# ex: git_repository git://github.com/bahamas10/dotfiles.git /home/dave/.dotfiles master
+#
+# arguments
+# $1 - git url
+# $2 - destination directory (can be empty or an existing git directory)
+# $3 - [optional] branch|tag|commit to pass to `git checkout`
+#
+# returns
+# 0 - the repo was updated or created
+# 1 - no update or `git pull` was needed on the repo; nothing changed
+git_repository() {
+	local repo=$1
+	local dir=$2
+	local checkout=${3:-master}
+
+	local freshrepo=false
+
+	[[ -n $repo ]] || fatal 'git_repository :: repo must be specified as $1'
+	[[ -n $dir ]]  || fatal 'git_repository :: dir must be specified as $2'
+
+	log "git_repository :: synchronizing $repo ($checkout) to $dir"
+
+	# we purposely don't error check this step, as it can fail
+	# if the repository is already checked out
+	trace "git_repository :: \`git clone $repo $dir\`"
+	if git clone "$repo" "$dir" 2>/dev/null; then
+		freshrepo=true
+	fi
+
+	trace 'git_repository :: entering subshell'
+	(
+	trace "git_repository :: chdir(2) to $dir"
+	cd "$dir"                || fatal "git_repository :: failed to chdir(2) to $dir"
+
+	# the guts of this function: fetch/reset/checkout/pull
+	git fetch                || fatal "git_repository :: failed to \`git fetch\` in $dir"
+	git reset --hard HEAD    || fatal "git_repository :: failed to \`git reset\` in $dir"
+	git checkout "$checkout" || fatal "git_repository :: failed to \`git checkout $checkout\` in $dir"
+
+	# now we check to see if there is anything to pull
+	local out=$(git --no-pager log "HEAD..origin/$checkout" --oneline)
+	echo "$out"
+	git pull                 || fatal "git_repository :: failed to \`git pull\` in $dir"
+
+	trace 'git_repository :: leaving subshell'
+	return 0
+	) || exit $?
+	# we have to explicitly call exit if the subshell `fatal`s, because
+	# the subshell acts like a try/catch block around exiting
+
+	# if the repo was created fresh, or there was output from the `git log` command
+	# we return 0 to signify something happened
+	if $freshrepo || [[ -n $out ]]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+######################################
+# Load configs and setup exit handlers
+######################################
+_basher_builtin_date=false
+if printf '%()T' -1 &>/dev/null; then
+	_basher_builtin_date=true
+fi
+
+_BASHER_CURRENT_PLUGIN='main'
+log "running as $USER on $HOSTNAME (pid $$)"
+debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION"
+
+# check dependencies
+if $_basher_builtin_date; then
+	debug 'using builtin printf strftime for logging'
+else
+	debug 'builtin printf strftime not supported - using date(1) for logging'
+fi
+_erb_version=$(erb --version 2>&1)
+if (($? == 0)); then
+	debug "erb found :: $_erb_version"
+else
+	debug "erb not found :: put_template calls will fail"
+fi
+_git_version=$(git --version 2>&1)
+if (($? == 0)); then
+	debug "git found :: $_git_version"
+else
+	debug "git not found :: git_repository calls will fail"
+fi
+
+# print time taken during exit
+atexit() {
+	if $_basher_lockfile_created; then
+		debug "unlinking lockfile $BASHER_LOCKFILE"
+		rm -f "$BASHER_LOCKFILE"
+	fi
+	local seconds=$SECONDS
+	log "run finished in $seconds $(((seconds == 1)) && echo second || echo seconds)"
+}
+trap atexit EXIT
+
+# try to load the config
+if [[ -e $_basher_config_file ]]; then
+	trace "attempting to load $_basher_config_file"
+	. "$_basher_config_file" && log "successfully loaded $_basher_config_file"
+fi
+
+# go to the dir with the plugins
+if [[ -n $_basher_dir ]]; then
+	# if this variable is set, a directory was supplied via `-d <dir>`
+	# so it takes precedence
+	BASHER_DIR=$_basher_dir
+fi
+trace "chdir(2) to $BASHER_DIR"
+cd "$BASHER_DIR" || fatal "failed to chdir(2) to $BASHER_DIR"
+debug "running in $PWD"
+
+# BASHER_PLUGINS should be set to the command line arguments
+# if any are present
+if [[ -n $1 ]]; then
+	BASHER_PLUGINS=("$@")
+fi
+
+# lockfile business
+if [[ -n $_basher_test_script ]]; then
+	debug 'skipping lockfile creation/check because `-t` was supplied'
+elif $_basher_force; then
+	debug 'skipping lockfile creation/check because `-f` was supplied'
+else
+	# make the lockfile
+	if (set -o noclobber; echo "$$" > "$BASHER_LOCKFILE"); then
+		debug "lockfile created at $BASHER_LOCKFILE"
+		_basher_lockfile_created=true
+	else
+		fatal "failed to acquire lockfile $BASHER_LOCKFILE -> $(cat "$BASHER_LOCKFILE" 2>/dev/null)"
+	fi
+fi
+
+#####################################
+# load some plugins
+#####################################
+# `-t <script>` was specified, just run that single plugin
+if [[ -n $_basher_test_script ]]; then
+	log "testing $_basher_test_script in $PWD"
+	_BASHER_CURRENT_PLUGIN="main->$_basher_test_script"
+	(
+	. "$_basher_test_script"
+	)
+	code=$?
+	_BASHER_CURRENT_PLUGIN='main'
+
+	if ((code == 0)); then
+		log "finished $_basher_test_script successfully"
+	else
+		fatal "$_basher_test_script failed - return $code"
+	fi
+	exit "$code"
+fi
+
+# run the plugins found via the command line or the config
+numplugins=${#BASHER_PLUGINS[@]}
+log "$numplugins $(((numplugins == 1)) && echo plugin || echo plugins) - [${BASHER_PLUGINS[@]}]"
+
+for plugin in "${BASHER_PLUGINS[@]}"; do
+	log "loading plugin $plugin"
+
+	# ex: nagios        => dir=nagios, file=index
+	# ex: nagios/server => dir=nagios, file=server
+	# ex: foo/bar/baz   => dir=foo, file=bar/baz
+	IFS=/ read dir file <<< "$plugin"
+	if [[ -z $file ]]; then
+		file='index'
+	fi
+	trace "dir=$dir file=$file"
+
+	# execute the script in a subshell so it can't affect this
+	# program.  we don't exec the script because we want to pass
+	# the functions defined above, which only get preserved by
+	# sourcing the script.
+	_BASHER_CURRENT_PLUGIN="main->$dir->$file"
+	(
+	cd "./plugins/$dir" && . "$file"
+	)
+	code=$?
+	_BASHER_CURRENT_PLUGIN='main'
+
+	if ((code == 0)); then
+		log "finished $plugin successfully"
+	else
+		fatal "$plugin failed - return $code"
+	fi
+done
