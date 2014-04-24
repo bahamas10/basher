@@ -694,7 +694,7 @@ Avoid uppercase variable names unless there's a good reason to use them.
 Don't use `let` or `readonly` to create variables.  `declare` should *only*
 be used for associative arrays.  `local` should *always* be used in functions.
 
-```
+``` bash
 # wrong
 declare -i foo=5
 let foo++
