@@ -201,11 +201,11 @@ functions like `put_template`, `git_repository`, etc. to work.
 - `chmod(1)` - optionally needed for `put_file` and `put_template`
 - `chown(1)` - optionally needed for `put_file` and `put_template`
 - `diff(1)` - required for `put_file` and `put_template`
-- `erb(1)` - ruby templating tool, required for `put_template`
 - `mv(1)` - required for `put_template`
 
 ### optional
 
+- `erb(1)` - ruby templating tool, required for `put_template`
 - `git(1)` - source control tool, required for `git_repository`
 - `tput(1)` - used for colorizing output, will fail gracefully if not present
 
