@@ -377,7 +377,12 @@ git_repository() {
 	# now we check to see if there is anything to pull
 	local out=$(git --no-pager log "HEAD..origin/$checkout" --oneline)
 	echo "$out"
-	git pull                 || fatal "git_repository :: failed to \`git pull\` in $dir"
+	if [[ -n $out ]]; then
+		trace 'git_repository :: calling `git pull`'
+		git pull         || fatal "git_repository :: failed to \`git pull\` in $dir"
+	else
+		trace 'git_repository :: skipping `git pull`; repository up-to-date'
+	fi
 
 	trace 'git_repository :: leaving subshell'
 	return 0
