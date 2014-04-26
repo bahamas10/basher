@@ -238,7 +238,7 @@ put_file() {
 
 	local ret=0
 
-	log "put_file :: $1 -> $2"
+	debug "put_file :: $1 -> $2"
 
 	# diff the file and put it into place
 	if ! color_diff "$2" "$1"; then
@@ -294,7 +294,7 @@ put_template() {
 
 	local ret=0
 
-	log "put_template :: $1 -> $2"
+	debug "put_template :: $1 -> $2"
 
 	# render to a tempfile so we can diff it
 	local tmpfile=$(mktemp "/tmp/basher-$$-XXXXXX")
@@ -355,7 +355,7 @@ git_repository() {
 	[[ -n $repo ]] || fatal 'git_repository :: repo must be specified as $1'
 	[[ -n $dir ]]  || fatal 'git_repository :: dir must be specified as $2'
 
-	log "git_repository :: synchronizing $repo ($checkout) to $dir"
+	debug "git_repository :: synchronizing $repo ($checkout) to $dir"
 
 	# we purposely don't error check this step, as it can fail
 	# if the repository is already checked out
@@ -408,7 +408,7 @@ if printf '%()T' -1 &>/dev/null; then
 fi
 
 _BASHER_CURRENT_PLUGIN='main'
-log "running as $USER on $HOSTNAME (pid $$)"
+debug "running as $USER on $HOSTNAME (pid $$)"
 debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION BASHER_VERSION=$BASHER_VERSION"
 
 # check dependencies
@@ -437,7 +437,7 @@ atexit() {
 		rm -f "$BASHER_LOCKFILE"
 	fi
 	local seconds=$SECONDS
-	log "run finished in $seconds $(((seconds == 1)) && echo second || echo seconds)"
+	debug "run finished in $seconds $(((seconds == 1)) && echo second || echo seconds)"
 }
 trap atexit EXIT
 
