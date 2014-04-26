@@ -393,6 +393,7 @@ git_repository() {
 	# if the repo was created fresh, or there was output from the `git log` command
 	# we return 0 to signify something happened
 	if $freshrepo || [[ -n $out ]]; then
+		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 		return 0
 	else
 		return 1
