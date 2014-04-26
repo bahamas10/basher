@@ -32,7 +32,7 @@ your environment.
 
 **Note:** `sudo` or escalated privileges may be required.
 
-    curl https://raw.github.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
+    curl https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
     chmod +x /opt/local/bin/basher
 
 ...and it's installed.
