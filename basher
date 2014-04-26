@@ -519,6 +519,7 @@ for plugin in "${BASHER_PLUGINS[@]}"; do
 	# program.  we don't exec the script because we want to pass
 	# the functions defined above, which only get preserved by
 	# sourcing the script.
+	trace "chdir(2) to $PWD/plugins/$dir"
 	_BASHER_CURRENT_PLUGIN="main->$dir->$file"
 	(
 	cd "./plugins/$dir" && . "$file"
