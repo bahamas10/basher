@@ -114,7 +114,7 @@ else
 fi
 
 # logging function; not to be called directly
-_basher_log() {
+basher_log() {
 	local level=$1
 	shift
 	case "$level" in
@@ -173,32 +173,32 @@ color_diff() {
 
 # log levels inspired by https://github.com/trentm/node-bunyan#levels
 fatal() {
-	((BASHER_VERBOSITY >= 0)) && _basher_log FATAL "$@"
+	((BASHER_VERBOSITY >= 0)) && basher_log FATAL "$@"
 	exit 1
 }
 error() {
-	((BASHER_VERBOSITY >= 1)) && _basher_log ERROR "$@"
+	((BASHER_VERBOSITY >= 1)) && basher_log ERROR "$@"
 	return 0
 }
 warn() {
-	((BASHER_VERBOSITY >= 2)) && _basher_log WARN "$@"
+	((BASHER_VERBOSITY >= 2)) && basher_log WARN "$@"
 	return 0
 }
 info() {
-	((BASHER_VERBOSITY >= 3)) && _basher_log INFO "$@"
+	((BASHER_VERBOSITY >= 3)) && basher_log INFO "$@"
 	return 0
 }
 debug() {
-	((BASHER_VERBOSITY >= 4)) && _basher_log DEBUG "$@"
+	((BASHER_VERBOSITY >= 4)) && basher_log DEBUG "$@"
 	return 0
 }
 trace() {
-	((BASHER_VERBOSITY >= 5)) && _basher_log TRACE "$@"
+	((BASHER_VERBOSITY >= 5)) && basher_log TRACE "$@"
 	return 0
 }
 # log is an alias for info
 log() {
-	((BASHER_VERBOSITY >= 3)) && _basher_log INFO "$@"
+	((BASHER_VERBOSITY >= 3)) && basher_log INFO "$@"
 	return 0
 }
 
@@ -238,7 +238,7 @@ put_file() {
 
 	local ret=0
 
-	debug "put_file :: $1 -> $2"
+	log "put_file :: $1 -> $2"
 
 	# diff the file and put it into place
 	if ! color_diff "$2" "$1"; then
@@ -294,7 +294,7 @@ put_template() {
 
 	local ret=0
 
-	debug "put_template :: $1 -> $2"
+	log "put_template :: $1 -> $2"
 
 	# render to a tempfile so we can diff it
 	local tmpfile=$(mktemp "/tmp/basher-$$-XXXXXX")
@@ -355,7 +355,7 @@ git_repository() {
 	[[ -n $repo ]] || fatal 'git_repository :: repo must be specified as $1'
 	[[ -n $dir ]]  || fatal 'git_repository :: dir must be specified as $2'
 
-	debug "git_repository :: synchronizing $repo ($checkout) to $dir"
+	log "git_repository :: synchronizing $repo ($checkout) to $dir"
 
 	# we purposely don't error check this step, as it can fail
 	# if the repository is already checked out
@@ -376,10 +376,11 @@ git_repository() {
 
 	# now we check to see if there is anything to pull
 	local out=$(git --no-pager log "HEAD..origin/$checkout" --oneline)
-	echo "$out"
 	if [[ -n $out ]]; then
+		echo "$out"
 		trace 'git_repository :: calling `git pull`'
 		git pull         || fatal "git_repository :: failed to \`git pull\` in $dir"
+		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 	else
 		trace 'git_repository :: skipping `git pull`; repository up-to-date'
 	fi
@@ -393,7 +394,6 @@ git_repository() {
 	# if the repo was created fresh, or there was output from the `git log` command
 	# we return 0 to signify something happened
 	if $freshrepo || [[ -n $out ]]; then
-		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 		return 0
 	else
 		return 1
@@ -409,8 +409,8 @@ if printf '%()T' -1 &>/dev/null; then
 fi
 
 _BASHER_CURRENT_PLUGIN='main'
-debug "running as $USER on $HOSTNAME (pid $$)"
-debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION BASHER_VERSION=$BASHER_VERSION"
+log "running basher ($BASHER_VERSION) as $USER on $HOSTNAME (pid $$)"
+debug "SHELL=$SHELL BASH_VERSION=$BASH_VERSION"
 
 # check dependencies
 if $_basher_builtin_date; then
@@ -438,14 +438,14 @@ atexit() {
 		rm -f "$BASHER_LOCKFILE"
 	fi
 	local seconds=$SECONDS
-	debug "run finished in $seconds $(((seconds == 1)) && echo second || echo seconds)"
+	log "run finished in $seconds $(((seconds == 1)) && echo second || echo seconds)"
 }
 trap atexit EXIT
 
 # try to load the config
 if [[ -e $_basher_config_file ]]; then
 	trace "attempting to load $_basher_config_file"
-	. "$_basher_config_file" && log "successfully loaded $_basher_config_file"
+	. "$_basher_config_file" && debug "successfully loaded $_basher_config_file"
 fi
 
 # go to the dir with the plugins
