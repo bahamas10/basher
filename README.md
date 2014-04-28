@@ -244,6 +244,27 @@ In default installations, this should be set to `/var/basher`
 
 The lockfile to use when not run with `-f`.
 
+### Custom Environment
+
+Since the config file is just a bash script that will be sourced every time
+`basher` is executed, it is possible to define your own environmental variables
+here, as well as execute arbitrary code.
+
+It's also possible to define a custom formatter here, by redefining the `basher_log`
+function, which is called by all logging functions (`log`, `debug`, `trace`, etc.).
+For instance, in `/etc/basher.conf` you could have something like:
+
+``` bash
+basher_log() {
+    local level=$1
+    shift
+    echo "level=$level $*"
+}
+```
+
+See the `basher_log` function as defined in the `basher` source code for a more
+verbose example.
+
 Plugins
 -------
 
