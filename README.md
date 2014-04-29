@@ -27,35 +27,22 @@ Quick Start Guide
 
 ### Install Basher
 
-Run the following commands to install `basher`.  Change the path as appropriate for
-your environment.
-
-**Note:** `sudo` or escalated privileges may be required.
-
-    curl https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
-    chmod +x /opt/local/bin/basher
-
-...and it's installed.
-
-### Install Plugins
-
-The next step is to clone down the template `basher-repo` (found here
-https://github.com/bahamas10/basher-repo) by running the following command below.
-This repo contains the plugins (scripts) that are available for use by
-`basher`.
+Run the following commands as `root` or a user with escalated privileges to
+install `basher`.  Change the path as appropriate for your environment.
 
 **Note:** If you have forked this repo, or have your own repo, substitute your `git`
 url into the command below.
 
+    curl https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
+    chmod +x /opt/local/bin/basher
     git clone https://github.com/bahamas10/basher-repo /var/basher
+    echo 'BASHER_DIR=/var/basher' > /etc/basher.conf
+
+... and it's installed
 
 The final step is to create a basic configuration file that tells `basher`
 that the repo is installed to `/var/basher`.  If you skip this step, you
 will need to pass the directory into `basher` with `-d /var/basher`.
-
-    echo 'BASHER_DIR=/var/basher' > /etc/basher.conf
-
-Again, escalated privileges may be required for this step.
 
 Lastly, test out `basher` by running the `test` plugin.
 
@@ -76,7 +63,7 @@ How It Works
 ------------
 
 `basher` is a single bash script, that is responsible for running other scripts
-called plugins.
+called plugins, found in `/var/basher` in the example above.
 
 ### Plugins
 
