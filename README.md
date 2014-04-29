@@ -46,8 +46,8 @@ will need to pass the directory into `basher` with `-d /var/basher`.
 
 Lastly, test out `basher` by running the `test` plugin.
 
-    $ basher -f test
-    [2014-03-25T02:18:25-0400] main  INFO: running as dave on bahamas10.local in /var/basher (pid 29426)
+    # basher test
+    [2014-03-25T02:18:25-0400] main  INFO: running as root on bahamas10.local in /var/basher (pid 29426)
     [2014-03-25T02:18:25-0400] main  INFO: 1 plugin - [test]
     [2014-03-25T02:18:25-0400] main  INFO: loading plugin test
     [2014-03-25T02:18:25-0400] main->test->index  INFO: it works!
@@ -55,9 +55,6 @@ Lastly, test out `basher` by running the `test` plugin.
     [2014-03-25T02:18:25-0400] main  INFO: run finished in 0 seconds
 
 And from the output we can see that it works!
-
-**Note:** `-f` in the above example tells `basher` to skip lockfile creation at
-`/var/run/basher.pid`, so it can be run without escalated privileges.
 
 How It Works
 ------------
@@ -67,8 +64,8 @@ called plugins, found in `/var/basher` in the example above.
 
 ### Plugins
 
-Plugins are simply shell scripts (not necessarily bash) or programs that
-perform a specific job, such as to install software, create users, manage
+Plugins are simply scripts (not necessarily bash) or programs that
+perform a specific job, such as install software, create users, manage
 services, etc.
 
 For instance, you could have a plugin called `rsyslog` whose job it is to install,
@@ -77,16 +74,16 @@ configure, and start `rsyslogd` on a server.
 It's also possible to make helper plugins that do nothing when run directly.  For instance,
 you could have a plugin called `aptitude` whose job it is to define helper functions
 that wrap `apt-get` and add `basher` style logging and error-checking logic. This way
-they can then be sourced by other plugins, like the `rsyslog` plugin mentioned above
+they can then be sourced by other plugins, like the `rsyslog` plugin mentioned above,
 to allow for code reuse.
 
 Plugins are executed in their own subshell environment, so they can **not** modify
 the running environment of the `basher` process, and are free to call `exit` or similar
-without killing the entire `basher` process.  In fact, the exit code of your plugin
+without killing the entire `basher` process.  In fact, the exit code of a plugin
 is used to determine if it was successfully run or not.  A non-successful plugin will
 cause the `basher` process to halt execution and terminate.
 
-In the quick start the `basher-repo` was cloned to `/var/basher`.  This repo
+In the quick start guide, the `basher-repo` was cloned to `/var/basher`.  This repo
 contains a `plugins/` directory which contains the plugins that can be used
 by `basher`.
 
@@ -94,22 +91,24 @@ by `basher`.
 
 The command line operands tell `basher` which plugins to run.  For example
 
-    $ basher test
+    # basher test
 
 ...tells basher to run the `test` plugin, while
 
-    $ basher node rsyslog
+    # basher node rsyslog
 
 ...tells basher to run the `node` plugin followed by the `rsyslog` plugin,
 halting execution if anything fails.
 
-You can specify plugins to run in the config file, `/etc/basher.conf` to be
-run when `bahser` is run without any operands.  For example
+You can specify plugins in the config file, `/etc/basher.conf`, to be
+run when `basher` is run without any operands.  For example
 
     BASHER_PLUGINS=(test node rsyslog)
 
 Will cause `basher` to run `test`, `node`, and `rsyslog`, in that order, when
-it is called on the command line with no operands.
+it is called on the command line with no operands like:
+
+    # basher
 
 Examples
 --------
@@ -150,7 +149,7 @@ And the `fs` portion of the `test` plugin can be used to see if `put_file()` and
     [2014-03-25T02:44:20-0400] main  INFO: finished test/fs successfully
     [2014-03-25T02:44:20-0400] main  INFO: run finished in 0 seconds
 
-Now, running the plugin again, you can see that no action is taken for the
+Now, running the plugin again, we can see that no action is taken for the
 files that have not changed, and that a diff is printed for template that has
 changed.
 
@@ -198,7 +197,7 @@ functions like `put_template`, `git_repository`, etc. to work.
 
 **Note:** `basher` doesn't attempt to check the version of bash running it.  Because
 of this, if you attempt to run `basher` on any version less than the minimum
-supported, it may or may not work.
+supported, it may not work.
 
 Configuration
 -------------
@@ -225,7 +224,7 @@ The basher repo directory in which to run.  This directory should,
 at the very least, have a `plugins/` directory.  This defaults to
 `$PWD`, and can be overridden at runtime with `-d dir`.
 
-In default installations, this should be set to `/var/basher`
+In default installations, this will be set to `/var/basher`
 
 #### `BASHER_LOCKFILE`
 
@@ -274,7 +273,7 @@ For example:
 
     basher foo
 
-Will execute `cd "$BAHSER_DIR/plugins/foo && . index`.
+Will execute `cd "$BASHER_DIR/plugins/foo" && . index`.
 
 ### Logging
 
@@ -360,8 +359,7 @@ if put_file files/sshd_config /etc/ssh/sshd_config; then
 fi
 ```
 
-`put_file()` will also show the output of `diff` to the terminal, so you can
-see how the files differed if they did.
+`put_file()` will also show the output of `diff` to the terminal.
 
 arguments
 
@@ -519,10 +517,10 @@ process is running.
 Of course not.
 
 Any bash script is already a valid `basher` plugin.  The logging functions automatically
-add things like the date, log level, executing plugin name, and line number and filename
-if `-vvvv` is supplied.
+add things like the date, log level, and executing plugin name, as well as line
+number and filename if `-vvv` is supplied.
 
-All functions provided by `bahser` are meant for nothing more than convenience.
+All functions provided by `basher` are meant for nothing more than convenience.
 
 #### I want certain plugins run on certain nodes based on X? Is that possible?
 
@@ -642,8 +640,9 @@ if $printf_date_supported; then
 fi
 ```
 
-Even though `$printf_date_supported` undergoes word-splitting in that example, we don't
-use quotes because we control the contents of the variable.
+Even though `$printf_date_supported` undergoes word-splitting in the if
+statement in that example, we don't use quotes because we control the contents
+of the variable.
 
 Also, variables like `$$`, `$?`, `$#`, etc. don't required quotes because they will
 never contain spaces, tabs, or newlines.
@@ -749,6 +748,7 @@ for f in $(seq 1 5); do
     ...
 done
 
+# wrong
 for f in $(seq 1 "$n"); do
     ...
 done
@@ -758,6 +758,7 @@ for f in {1..5}; do
     ...
 done
 
+# right
 for ((i = 0; i < n; i++)); do
     ...
 done
