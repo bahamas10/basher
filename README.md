@@ -33,7 +33,7 @@ install `basher`.  Change the path as appropriate for your environment.
 **Note:** If you have forked this repo, or have your own repo, substitute your `git`
 url into the command below.
 
-    curl https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
+    curl -L https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
     chmod +x /opt/local/bin/basher
     git clone https://github.com/bahamas10/basher-repo /var/basher
     echo 'BASHER_DIR=/var/basher' > /etc/basher.conf
