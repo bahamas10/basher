@@ -40,7 +40,7 @@ url into the command below.
 
 ... and it's installed
 
-The final step is to create a basic configuration file that tells `basher`
+The final step was to create a basic configuration file that tells `basher`
 that the repo is installed to `/var/basher`.  If you skip this step, you
 will need to pass the directory into `basher` with `-d /var/basher`.
 

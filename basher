@@ -114,6 +114,7 @@ else
 fi
 
 # logging function; not to be called directly
+_basher_printed_header=false
 basher_log() {
 	local level=$1
 	shift
@@ -125,19 +126,26 @@ basher_log() {
 		DEBUG) level="$COLOR_WHITE$level$COLOR_RESET";;
 		TRACE) level="$COLOR_WHITE$level$COLOR_RESET";;
 	esac
-	if ((BASHER_VERBOSITY > 5)); then # above trace
-		# line number and filename
-		printf '%s %s %s %s: %s\n' \
-			"$COLOR_CYAN[$(_basher_date)]$COLOR_RESET" \
-			"$_BASHER_CURRENT_PLUGIN" \
-			"$COLOR_WHITE(${BASH_SOURCE[2]} ${BASH_LINENO[1]})$COLOR_RESET" \
+	# print the header
+	if ! $_basher_printed_header; then
+		printf '\n[%s] (%s)\n' \
+			"$COLOR_GREEN$(_basher_date)$COLOR_RESET" \
+			"$COLOR_YELLOW$_BASHER_CURRENT_PLUGIN$COLOR_RESET"
+		_basher_printed_header=true
+	fi
+
+	if ((BASHER_VERBOSITY > 5)); then
+		# file name and line number if above trace
+		printf '        - %s %s %s(%s:%s)%s\n' \
 			"$level" \
-			"$*"
+			"$*" \
+			"$COLOR_CYAN" \
+			"${BASH_SOURCE[2]}" \
+			"${BASH_LINENO[1]}" \
+			"$COLOR_RESET"
 	else
-		# minimal logging
-		printf '%s %s %s: %s\n' \
-			"$COLOR_CYAN[$(_basher_date)]$COLOR_RESET" \
-			"$_BASHER_CURRENT_PLUGIN" \
+		# otherwise print the log line
+		printf '        - %s %s\n' \
 			"$level" \
 			"$*"
 	fi
@@ -162,7 +170,7 @@ color_diff() {
 		printf(\"%s\", \"$COLOR_GREEN\");
 	}
 	/^@/ {
-		printf(\"%s\", \"$COLOR_MAGENTA\");
+		printf(\"%s\", \"$COLOR_CYAN\");
 	}
 
 	{
@@ -521,6 +529,7 @@ for plugin in "${BASHER_PLUGINS[@]}"; do
 	# the functions defined above, which only get preserved by
 	# sourcing the script.
 	trace "chdir(2) to $PWD/plugins/$dir"
+	_basher_printed_header=false
 	_BASHER_CURRENT_PLUGIN="main->$dir->$file"
 	(
 	cd "$PWD/plugins/$dir" && . "$file"
