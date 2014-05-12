@@ -6,7 +6,7 @@ Configuration Management in Bash
 > not complicated enough to attract attention&trade; - [@mikeal](https://twitter.com/mikeal/status/443819733255598080)
 
 `basher` is configuration management without the complication.  It is a single
-bash script that is responsible for running other scripts (bash or other)
+bash script that is responsible for running other scripts (bash or not)
 that do things like install software, start services, create users, etc.
 
 It's just bash, so it should work on any Unix or Unix-like operating system.
@@ -68,14 +68,14 @@ Plugins are simply scripts (not necessarily bash) or programs that
 perform a specific job, such as install software, create users, manage
 services, etc.
 
-For instance, you could have a plugin called `rsyslog` whose job it is to install,
+For example, you could have a plugin called `rsyslog` whose job it is to install,
 configure, and start `rsyslogd` on a server.
 
-It's also possible to make helper plugins that do nothing when run directly.  For instance,
+It's also possible to make helper plugins that do nothing when run directly.  For example,
 you could have a plugin called `aptitude` whose job it is to define helper functions
-that wrap `apt-get` and add `basher` style logging and error-checking logic. This way
-they can then be sourced by other plugins, like the `rsyslog` plugin mentioned above,
-to allow for code reuse.
+that wrap `apt-get` and add `basher` style logging and error-checking logic. This way,
+the plugins can then be sourced by other plugins, like the `rsyslog` plugin
+mentioned above, to allow for code reuse.
 
 Plugins are executed in their own subshell environment, so they can **not** modify
 the running environment of the `basher` process, and are free to call `exit` or similar
@@ -191,6 +191,7 @@ functions like `put_template`, `git_repository`, etc. to work.
 
 ### optional
 
+- `mktemp(1)` - portable temp file creation tool, required for `put_template`
 - `erb(1)` - ruby templating tool, required for `put_template`
 - `git(1)` - source control tool, required for `git_repository`
 - `tput(1)` - used for colorizing output, will fail gracefully if not present
@@ -265,7 +266,7 @@ Executes, in order:
     $BASHER_DIR/plugins/test/all
     $BASHER_DIR/plugins/test/fs
 
-Plugins are executed in their plugin directory, so for example the `rsyslog` plugin
+Plugins are executed in their plugin directory, so the `rsyslog` plugin
 will be executed in `$BASHER_DIR/plugins/rsyslog`, where it can access files,
 templates, script, etc.  by using relative paths.
 
@@ -273,7 +274,9 @@ For example:
 
     basher foo
 
-Will execute `cd "$BASHER_DIR/plugins/foo" && . index`.
+Will effectively execute:
+
+    cd "$BASHER_DIR/plugins/foo" && . index
 
 ### Logging
 
@@ -311,7 +314,8 @@ they will not be available as environmental variables to executed scripts.
 - `COLOR_CYAN` - output of `tput setaf 6`
 - `COLOR_WHITE` - output of `tput setaf 7`
 
-**Note:** these variables will be empty if the terminal doesn't support colors
+**Note:** these variables will be empty if the terminal doesn't support colors or
+`basher` is started in boring mode with `-b`.
 
 #### Functions
 
@@ -437,15 +441,15 @@ returns
 
 ### Other Languages
 
-It is possible to write your plugins in other languages, fairly easily.  Let's make
-an example plugin called `polyglot`.
+It is possible to write your plugins in other languages, fairly easily.  For example,
+we'll make a plugin called `polyglot`.
 
 ```
 mkdir plugin/polyglot
 cd plugins/polyglot
 ```
 
-You can now create an `index` script that looks simply like this
+We can now create an `index` script that looks simply like this
 
 `index`
 
@@ -454,7 +458,7 @@ exec node ./my_script.js
 ```
 
 ...and then `my_script.js` will be run as your plugin, allowing you to signify failure or success
-by calling `process.exit()` with the appropriate return code.
+by calling `process.exit()` or similar with the appropriate return code.
 
 FAQ / Concerns
 --------------
@@ -508,13 +512,14 @@ of the associative array fails.
 
 `$PWD`.
 
-A plugin is guaranteed, by `basher`, to be run out of its directory.  Also,
-you can use `$BASHER_DIR`, which will point the directory out of which the `basher`
-process is running.
+A plugin is guaranteed, by `basher`, to be run out of its directory.
+
+Also, you can use `$BASHER_DIR`, as it will point the directory out of which
+the `basher` process is running.
 
 #### Do I have to use `debug`, `log`, `put_file`, etc.? I just want to use scripts
 
-Of course not.
+No.
 
 Any bash script is already a valid `basher` plugin.  The logging functions automatically
 add things like the date, log level, and executing plugin name, as well as line
@@ -594,7 +599,7 @@ is outlined in the wiki.
 Any pull request to the core `basher` script should adhere to this guide.
 
 **Note:** Some of this style guide is based on personal aesthetic preference, and as
-such, is happily up for debate.
+such, is up for debate.
 
 ### Quoting
 
@@ -641,17 +646,18 @@ fi
 ```
 
 Even though `$printf_date_supported` undergoes word-splitting in the if
-statement in that example, we don't use quotes because we control the contents
-of the variable.
+statement in that example, quotes are not used because the contents of that
+variable is controlled explicitly and not taken from a user or command.
 
-Also, variables like `$$`, `$?`, `$#`, etc. don't required quotes because they will
-never contain spaces, tabs, or newlines.
+Also, variables like `$$`, `$?`, `$#`, etc. don't required quotes because they
+will never contain spaces, tabs, or newlines.
 
 When in doubt, [quote all expansions](http://mywiki.wooledge.org/Quotes).
 
 ### Functions
 
-Don't use the `function` keyword.  All variables created in a function must be made local.
+Don't use the `function` keyword.  All variables created in a function must be
+made local.
 
 ``` bash
 # wrong

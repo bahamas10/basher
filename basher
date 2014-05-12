@@ -455,12 +455,13 @@ if [[ -e $_basher_config_file ]]; then
 	. "$_basher_config_file" && debug "successfully loaded $_basher_config_file"
 fi
 
-# go to the dir with the plugins
+# check if dir was supplied via `-d`
 if [[ -n $_basher_dir ]]; then
-	# if this variable is set, a directory was supplied via `-d <dir>`
-	# so it takes precedence
+	# if this variable is set it takes precedence
 	BASHER_DIR=$_basher_dir
 fi
+
+# go to the dir with the plugins
 trace "chdir(2) to $BASHER_DIR"
 cd "$BASHER_DIR" || fatal "failed to chdir(2) to $BASHER_DIR"
 debug "running in $PWD"
@@ -472,15 +473,15 @@ if [[ -n $1 ]]; then
 fi
 
 # lockfile business
-if [[ -n $_basher_test_script ]]; then
-	debug 'skipping lockfile creation/check because `-t` was supplied'
-elif $_basher_force; then
+if $_basher_force; then
 	debug 'skipping lockfile creation/check because `-f` was supplied'
+elif [[ -n $_basher_test_script ]]; then
+	debug 'skipping lockfile creation/check because `-t` was supplied'
 else
 	# make the lockfile
 	if (set -o noclobber; echo "$$" > "$BASHER_LOCKFILE"); then
-		debug "lockfile created at $BASHER_LOCKFILE"
 		_basher_lockfile_created=true
+		debug "lockfile created at $BASHER_LOCKFILE"
 	else
 		fatal "failed to acquire lockfile $BASHER_LOCKFILE -> $(cat "$BASHER_LOCKFILE" 2>/dev/null)"
 	fi
@@ -492,6 +493,7 @@ fi
 # `-t <script>` was specified, just run that single plugin
 if [[ -n $_basher_test_script ]]; then
 	log "testing $_basher_test_script in $PWD"
+	_basher_printed_header=false
 	_BASHER_CURRENT_PLUGIN="main->$_basher_test_script"
 	(
 	. "$_basher_test_script"
