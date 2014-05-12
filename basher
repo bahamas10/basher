@@ -172,9 +172,8 @@ color_diff() {
 	/^@/ {
 		printf(\"%s\", \"$COLOR_CYAN\");
 	}
-
 	{
-		print \$0 \"$COLOR_RESET\";
+		printf(\"            %s%s\\n\", \$0, \"$COLOR_RESET\");
 	}"
 	return "${PIPESTATUS[0]}"
 }
@@ -513,7 +512,7 @@ numplugins=${#BASHER_PLUGINS[@]}
 log "$numplugins $(((numplugins == 1)) && echo plugin || echo plugins) - [${BASHER_PLUGINS[@]}]"
 
 for plugin in "${BASHER_PLUGINS[@]}"; do
-	log "loading plugin $plugin"
+	debug "loading plugin $plugin"
 
 	# ex: nagios        => dir=nagios, file=index
 	# ex: nagios/server => dir=nagios, file=server
@@ -538,7 +537,7 @@ for plugin in "${BASHER_PLUGINS[@]}"; do
 	_BASHER_CURRENT_PLUGIN='main'
 
 	if ((code == 0)); then
-		log "finished $plugin successfully"
+		debug "finished $plugin successfully"
 	else
 		fatal "$plugin failed - return $code"
 	fi
