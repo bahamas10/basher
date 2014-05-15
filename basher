@@ -115,7 +115,7 @@ else
 fi
 
 # logging function; not to be called directly
-_basher_printed_header=false
+_basher_printed_header=
 basher_log() {
 	local level=$1
 	shift
@@ -128,8 +128,12 @@ basher_log() {
 		TRACE) level="$COLOR_WHITE$level$COLOR_RESET";;
 	esac
 	# print the header
+	if [[ -n $_basher_printed_header ]] && ! $_basher_printed_header; then
+		echo
+	fi
+	_basher_printed_header=${_basher_printed_header:-false}
 	if ! $_basher_printed_header; then
-		printf '\n[%s] (%s)\n' \
+		printf '[%s] (%s)\n' \
 			"$COLOR_GREEN$(_basher_date)$COLOR_RESET" \
 			"$COLOR_YELLOW$_BASHER_CURRENT_PLUGIN$COLOR_RESET"
 		_basher_printed_header=true
