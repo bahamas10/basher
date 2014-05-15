@@ -5,7 +5,8 @@
 # Configuration management in Bash
 #
 # Inspired by: https://twitter.com/bahamas10_/status/443818952125194240
-# Style guidelines: http://mywiki.wooledge.org/
+# Style guideline: https://github.com/bahamas10/basher#contributing--style
+# Bash reference: http://mywiki.wooledge.org/
 #
 # Creator: Dave Eddy <dave@daveeddy.com>
 # Date: 3/13/14
