@@ -46,13 +46,16 @@ will need to pass the directory into `basher` with `-d /var/basher`.
 
 Lastly, test out `basher` by running the `test` plugin.
 
-    # basher test
-    [2014-03-25T02:18:25-0400] main  INFO: running as root on bahamas10.local in /var/basher (pid 29426)
-    [2014-03-25T02:18:25-0400] main  INFO: 1 plugin - [test]
-    [2014-03-25T02:18:25-0400] main  INFO: loading plugin test
-    [2014-03-25T02:18:25-0400] main->test->index  INFO: it works!
-    [2014-03-25T02:18:25-0400] main  INFO: finished test successfully
-    [2014-03-25T02:18:25-0400] main  INFO: run finished in 0 seconds
+    # ./basher test
+    [2014-05-15T11:25:03-0400] (main)
+            -  INFO running basher (v0.0.0) as root on bahamas10.local (pid 2997)
+            -  INFO 1 plugin - [test]
+
+    [2014-05-15T11:25:03-0400] (main->test->index)
+            -  INFO it works!
+
+    [2014-05-15T11:25:03-0400] (main)
+            -  INFO run finished in 0 seconds
 
 And from the output we can see that it works!
 
@@ -116,58 +119,71 @@ Examples
 Try running the advanced version of the `test` plugin to make sure some
 of the fancier features of `basher` are working.
 
-    $ basher test/all
-    [2014-03-25T02:42:54-0400] main  INFO: running as dave on bahamas10.local in /var/basher (pid 30215)
-    [2014-03-25T02:42:54-0400] main  INFO: 1 plugin - [test/all]
-    [2014-03-25T02:42:54-0400] main  INFO: loading plugin test/all
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: loaded test item
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: testing log messages
-    [2014-03-25T02:42:54-0400] main->test->all ERROR: > some error
-    [2014-03-25T02:42:54-0400] main->test->all  WARN: > some warn
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: > some info
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: > some log
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: running in /var/basher/plugins/test as dave
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: basher version v0.0.0
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: uname Darwin
-    [2014-03-25T02:42:54-0400] main->test->all  INFO: finished
-    [2014-03-25T02:42:54-0400] main  INFO: finished test/all successfully
-    [2014-03-25T02:42:54-0400] main  INFO: run finished in 0 seconds
+    $ ./basher test/all
+    [2014-05-15T11:25:58-0400] (main)
+            -  INFO running basher (v0.0.0) as dave on bahamas10.local (pid 3201)
+            -  INFO 1 plugin - [test/all]
+
+    [2014-05-15T11:25:58-0400] (main->test->all)
+            -  INFO loaded test item
+            -  INFO testing log messages
+            - ERROR > some error
+            -  WARN > some warn
+            -  INFO > some info
+            -  INFO > some log
+            -  INFO running in /Users/dave/dev/basher-repo/plugins/test as dave
+            -  INFO basher version v0.0.0
+            -  INFO uname Darwin
+            -  INFO finished
+
+    [2014-05-15T11:25:58-0400] (main)
+            -  INFO run finished in 0 seconds
 
 And the `fs` portion of the `test` plugin can be used to see if `put_file()` and
 `put_template()` (`erb` templating) are working.
 
     $ basher test/fs
-    [2014-03-25T02:44:20-0400] main  INFO: running as dave on bahamas10.local in /var/basher (pid 30419)
-    [2014-03-25T02:44:20-0400] main  INFO: 1 plugin - [test/fs]
-    [2014-03-25T02:44:20-0400] main  INFO: loading plugin test/fs
-    [2014-03-25T02:44:20-0400] main->test->fs  INFO: put_file :: files/hello-world1.txt -> /tmp/hello-world1.txt
+    [2014-05-15T11:27:07-0400] (main)
+            -  INFO running basher (v0.0.0) as dave on bahamas10.local (pid 3268)
+            -  INFO 1 plugin - [test/fs]
+
+    [2014-05-15T11:27:07-0400] (main->test->fs)
+            -  INFO put_file :: files/hello-world1.txt -> /tmp/hello-world1.txt
     diff: /tmp/hello-world1.txt: No such file or directory
-    [2014-03-25T02:44:20-0400] main->test->fs  INFO: put_template :: templates/hello-world2.txt.erb -> /tmp/hello-world2.txt
+            -  WARN put_file :: files/hello-world1.txt -> /tmp/hello-world1.txt
+            -  INFO put_template :: templates/hello-world2.txt.erb -> /tmp/hello-world2.txt
     diff: /tmp/hello-world2.txt: No such file or directory
-    [2014-03-25T02:44:20-0400] main->test->fs  INFO: put_template :: templates/hello-world3.txt.erb -> /tmp/hello-world3.txt
+            -  WARN put_template :: templates/hello-world2.txt.erb -> /tmp/hello-world2.txt
+            -  INFO put_template :: templates/hello-world3.txt.erb -> /tmp/hello-world3.txt
     diff: /tmp/hello-world3.txt: No such file or directory
-    [2014-03-25T02:44:20-0400] main  INFO: finished test/fs successfully
-    [2014-03-25T02:44:20-0400] main  INFO: run finished in 0 seconds
+            -  WARN put_template :: templates/hello-world3.txt.erb -> /tmp/hello-world3.txt
+
+    [2014-05-15T11:27:07-0400] (main)
+            -  INFO run finished in 0 seconds
 
 Now, running the plugin again, we can see that no action is taken for the
 files that have not changed, and that a diff is printed for template that has
 changed.
 
     $ basher test/fs
-    [2014-03-25T02:44:21-0400] main  INFO: running as dave on bahamas10.local in /var/basher (pid 30491)
-    [2014-03-25T02:44:21-0400] main  INFO: 1 plugin - [test/fs]
-    [2014-03-25T02:44:21-0400] main  INFO: loading plugin test/fs
-    [2014-03-25T02:44:21-0400] main->test->fs  INFO: put_file :: files/hello-world1.txt -> /tmp/hello-world1.txt
-    [2014-03-25T02:44:21-0400] main->test->fs  INFO: put_template :: templates/hello-world2.txt.erb -> /tmp/hello-world2.txt
-    [2014-03-25T02:44:21-0400] main->test->fs  INFO: put_template :: templates/hello-world3.txt.erb -> /tmp/hello-world3.txt
-    --- /tmp/hello-world3.txt   2014-03-25 02:44:20.000000000 -0400
-    +++ /tmp/basher-30491-2UCOkm    2014-03-25 02:44:21.000000000 -0400
-    @@ -1,2 +1,2 @@
-     Hello bahamas10.local!
-    -The time is 2014-03-25 02:44:20 -0400
-    +The time is 2014-03-25 02:44:21 -0400
-    [2014-03-25T02:44:21-0400] main  INFO: finished test/fs successfully
-    [2014-03-25T02:44:21-0400] main  INFO: run finished in 0 seconds
+    [2014-05-15T11:27:08-0400] (main)
+            -  INFO running basher (v0.0.0) as dave on bahamas10.local (pid 3333)
+            -  INFO 1 plugin - [test/fs]
+
+    [2014-05-15T11:27:08-0400] (main->test->fs)
+            -  INFO put_file :: files/hello-world1.txt -> /tmp/hello-world1.txt
+            -  INFO put_template :: templates/hello-world2.txt.erb -> /tmp/hello-world2.txt
+            -  INFO put_template :: templates/hello-world3.txt.erb -> /tmp/hello-world3.txt
+                --- /tmp/hello-world3.txt   2014-05-15 11:27:07.000000000 -0400
+                +++ /tmp/basher-3333-pP4bhU 2014-05-15 11:27:08.000000000 -0400
+                @@ -1,2 +1,2 @@
+                 Hello bahamas10.local!
+                -The time is 2014-05-15 11:27:07 -0400
+                +The time is 2014-05-15 11:27:08 -0400
+            -  WARN put_template :: templates/hello-world3.txt.erb -> /tmp/hello-world3.txt
+
+    [2014-05-15T11:27:08-0400] (main)
+            -  INFO run finished in 0 seconds
 
 Dependencies
 ------------
@@ -183,17 +199,17 @@ functions like `put_template`, `git_repository`, etc. to work.
 
 ### posix tools used
 
-- `cp(1)` - required for `put_file`
 - `chmod(1)` - optionally needed for `put_file` and `put_template`
 - `chown(1)` - optionally needed for `put_file` and `put_template`
+- `cp(1)` - required for `put_file`
 - `diff(1)` - required for `put_file` and `put_template`
 - `mv(1)` - required for `put_template`
 
 ### optional
 
-- `mktemp(1)` - portable temp file creation tool, required for `put_template`
 - `erb(1)` - ruby templating tool, required for `put_template`
 - `git(1)` - source control tool, required for `git_repository`
+- `mktemp(1)` - portable temp file creation tool, required for `put_template`
 - `tput(1)` - used for colorizing output, will fail gracefully if not present
 
 **Note:** `basher` doesn't attempt to check the version of bash running it.  Because
@@ -442,7 +458,7 @@ returns
 ### Other Languages
 
 It is possible to write your plugins in other languages, fairly easily.  For example,
-we'll make a plugin called `polyglot`.
+let's make a plugin called `polyglot`.
 
 ```
 mkdir plugin/polyglot
@@ -495,7 +511,7 @@ Run `basher` like this:
 #### I want to use a fancy new bash feature that is not guaranteed to be available for bash v3
 
 The best way to do this is to use feature detection rather than version snooping.  For
-instance, if you want to use associate arrays, you can do something like this:
+instance, if you want to use associative arrays, you can do something like this:
 
 ``` bash
 if declare -A foo; then
@@ -505,7 +521,13 @@ else
 fi
 ```
 
-This way, your plugin will fail and halt execution of `basher` if the declaration
+or with one line
+
+``` bash
+declary -A foo || fatal 'failed to create associative array'
+```
+
+This way, your plugin will fail and halt the execution of `basher` if the declaration
 of the associative array fails.
 
 #### How do I determine the path where my plugin is located?
@@ -588,8 +610,8 @@ Contributing / Style
 --------------------
 
 Pull requests and creating issues are welcomed and encouraged.  However, I try to maintain
-a style with bash that makes it safe and predictable.  The style guide is based on this wiki,
-specifically this page.
+a style with bash that makes it safe and predictable.  The style guide is based
+on [this wiki](http://mywiki.wooledge.org), specifically this page.
 
 http://mywiki.wooledge.org/BashGuide/Practices
 
@@ -603,8 +625,8 @@ such, is up for debate.
 
 ### Quoting
 
-Use double quotes for strings that require variable or command substitution
-interpolation, and single quotes for all others.
+Use double quotes for strings that require variable expansion or command
+substitution interpolation, and single quotes for all others.
 
 ``` bash
 # right
@@ -645,14 +667,14 @@ if $printf_date_supported; then
 fi
 ```
 
-Even though `$printf_date_supported` undergoes word-splitting in the if
+Even though `$printf_date_supported` undergoes word-splitting in the `if`
 statement in that example, quotes are not used because the contents of that
-variable is controlled explicitly and not taken from a user or command.
+variable are controlled explicitly and not taken from a user or command.
 
 Also, variables like `$$`, `$?`, `$#`, etc. don't required quotes because they
 will never contain spaces, tabs, or newlines.
 
-When in doubt, [quote all expansions](http://mywiki.wooledge.org/Quotes).
+When in doubt however, [quote all expansions](http://mywiki.wooledge.org/Quotes).
 
 ### Functions
 
@@ -780,7 +802,7 @@ None of the things listed in the link below will be accepted in this code base.
 
 http://mywiki.wooledge.org/BashPitfalls
 
-This reference has examples on how to fix these issues.
+This reference also has examples on how to fix these issues.
 
 License
 -------
