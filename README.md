@@ -62,7 +62,7 @@ And from the output we can see that it works!
 How It Works
 ------------
 
-`basher` is a single bash script, that is responsible for running other scripts
+`basher` is a single bash script that is responsible for running other scripts,
 called plugins, found in `/var/basher` in the example above.
 
 ### Plugins
