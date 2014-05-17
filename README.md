@@ -119,7 +119,7 @@ Examples
 Try running the advanced version of the `test` plugin to make sure some
 of the fancier features of `basher` are working.
 
-    $ ./basher test/all
+    $ basher test/all
     [2014-05-15T11:25:58-0400] (main)
             -  INFO running basher (v0.0.0) as dave on bahamas10.local (pid 3201)
             -  INFO 1 plugin - [test/all]
