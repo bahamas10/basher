@@ -199,6 +199,7 @@ functions like `put_template`, `git_repository`, etc. to work.
 
 ### posix tools used
 
+- `awk(1)` - required for `color_diff`
 - `chmod(1)` - optionally needed for `put_file` and `put_template`
 - `chown(1)` - optionally needed for `put_file` and `put_template`
 - `cp(1)` - required for `put_file`
