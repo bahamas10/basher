@@ -65,6 +65,9 @@ How It Works
 `basher` is a single bash script that is responsible for running other scripts,
 called plugins, found in `/var/basher` in the example above.
 
+The plugins used above can be found in this skeleton `basher-repo`
+https://github.com/bahamas10/basher-repo
+
 ### Plugins
 
 Plugins are simply scripts (not necessarily bash) or programs that
