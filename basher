@@ -538,7 +538,7 @@ for plugin in "${BASHER_PLUGINS[@]}"; do
 	_basher_printed_header=false
 	_BASHER_CURRENT_PLUGIN="main->$dir->$file"
 	(
-	cd "$PWD/plugins/$dir" && . "$file"
+	cd "$PWD/plugins/$dir" && . "./$file"
 	)
 	code=$?
 	_BASHER_CURRENT_PLUGIN='main'
