@@ -15,7 +15,7 @@
 # Contributors
 # - Dave Eddy <dave@daveeddy.com> bahamas10
 
-export BASHER_VERSION='v0.0.0'
+export BASHER_VERSION='v0.0.1'
 
 # print the basher usage message
 usage() {
