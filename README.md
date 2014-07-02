@@ -33,10 +33,12 @@ install `basher`.  Change the path as appropriate for your environment.
 **Note:** If you have forked this repo, or have your own repo, substitute your `git`
 url into the command below.
 
-    curl -L https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
-    chmod +x /opt/local/bin/basher
-    git clone https://github.com/bahamas10/basher-repo /var/basher
-    echo 'BASHER_DIR=/var/basher' > /etc/basher.conf
+``` bash
+curl -L https://raw.githubusercontent.com/bahamas10/basher/master/basher -o /opt/local/bin/basher
+chmod +x /opt/local/bin/basher
+git clone https://github.com/bahamas10/basher-repo /var/basher
+echo 'BASHER_DIR=/var/basher' > /etc/basher.conf
+```
 
 ... and it's installed
 
@@ -109,7 +111,9 @@ halting execution if anything fails.
 You can specify plugins in the config file, `/etc/basher.conf`, to be
 run when `basher` is run without any operands.  For example
 
-    BASHER_PLUGINS=(test node rsyslog)
+``` bash
+BASHER_PLUGINS=(test node rsyslog)
+```
 
 Will cause `basher` to run `test`, `node`, and `rsyslog`, in that order, when
 it is called on the command line with no operands like:
@@ -282,9 +286,11 @@ like `index.html` for the web, or `index.js` for node.  For example:
 
 Executes, in order:
 
-    $BASHER_DIR/plugins/test/index
-    $BASHER_DIR/plugins/test/all
-    $BASHER_DIR/plugins/test/fs
+``` bash
+$BASHER_DIR/plugins/test/index
+$BASHER_DIR/plugins/test/all
+$BASHER_DIR/plugins/test/fs
+```
 
 Plugins are executed in their plugin directory, so the `rsyslog` plugin
 will be executed in `$BASHER_DIR/plugins/rsyslog`, where it can access files,
@@ -296,7 +302,9 @@ For example:
 
 Will effectively execute:
 
-    cd "$BASHER_DIR/plugins/foo" && . index
+``` bash
+cd "$BASHER_DIR/plugins/foo" && . index
+```
 
 ### Logging
 
@@ -362,7 +370,9 @@ This function is a simple wrapper around `diff` that adds color around the outpu
 It has the same usage as `diff`, and produces the same exit codes.  Arguments
 are passed to `diff` like:
 
-    diff -u "$@"
+``` bash
+diff -u "$@"
+```
 
 ---
 
@@ -464,7 +474,7 @@ returns
 It is possible to write your plugins in other languages, fairly easily.  For example,
 let's make a plugin called `polyglot`.
 
-```
+``` bash
 mkdir plugin/polyglot
 cd plugins/polyglot
 ```
@@ -473,7 +483,7 @@ We can now create an `index` script that looks simply like this
 
 `index`
 
-```
+``` bash
 exec node ./my_script.js
 ```
 
