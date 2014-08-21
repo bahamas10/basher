@@ -637,6 +637,10 @@ Any pull request to the core `basher` script should adhere to this guide.
 **Note:** Some of this style guide is based on personal aesthetic preference, and as
 such, is up for debate.
 
+### Tabs / Spaces
+
+tabs.
+
 ### Quoting
 
 Use double quotes for strings that require variable expansion or command
