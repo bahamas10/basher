@@ -373,6 +373,7 @@ git_repository() {
 	# if the repository is already checked out
 	trace "git_repository :: \`git clone $repo $dir\`"
 	if git clone "$repo" "$dir" 2>/dev/null; then
+		trace "git_repository :: $repo was freshly cloned"
 		freshrepo=true
 	fi
 
@@ -392,9 +393,12 @@ git_repository() {
 		echo "$out"
 		trace 'git_repository :: calling `git pull`'
 		git pull         || fatal "git_repository :: failed to \`git pull\` in $dir"
-		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 	else
 		trace 'git_repository :: skipping `git pull`; repository up-to-date'
+	fi
+
+	if [[ -n $out ]] || $freshrepo; then
+		warn "git_repository :: $repo ($checkout) synchronized to $dir"
 	fi
 
 	trace 'git_repository :: leaving subshell'
